@@ -183,7 +183,7 @@
         <div class="stats-grid">
           <div class="stat-card"><h3>Total Participants</h3><p id="total-participants">0</p></div>
           <div class="stat-card"><h3>Avg. Progress</h3><p id="avg-attendance">0%</p></div>
-          <div class="stat-card"><h3>Total Lessons</h3><p id="lessons-completed">0/15</p></div>
+          <div class="stat-card"><h3>Total Lessons</h3><p id="lessons-completed">0/16</p></div>
           <div class="stat-card"><h3>Active Groups</h3><p id="active-groups">0</p></div>
           <div class="stat-card"><h3>Graduated</h3><p id="graduated-count">0</p></div>
         </div>
@@ -209,7 +209,7 @@
           <div class="chart-wrapper"><h4>Progress Distribution</h4><canvas id="progress-distribution-chart"></canvas></div>
         </div>
       </section>
-            <section id="data-entry" class="view">
+      <section id="data-entry" class="view">
         <div id="success-message" class="success-message">Data saved successfully!</div>
         <div id="graduation-alert" class="success-message" style="background:linear-gradient(135deg,#f59e0b,#fbbf24);">Student has graduated! All lessons completed!</div>
         <div class="form-container">
@@ -230,7 +230,8 @@
               <div class="form-row">
                 <div class="form-group">
                   <label>Class Number *</label>
-                  <input type="number" id="de-class" required placeholder="e.g., 696" min="1" max="999" oninput="calculateNextClassNumber()"/>
+                  <!-- FIX: changed to type="text" with inputmode="numeric" so the full value is always selectable/deletable -->
+                  <input type="text" inputmode="numeric" id="de-class" required placeholder="e.g., 696" oninput="calculateNextClassNumber()"/>
                   <div class="auto-class-hint" id="class-hint">Next available: <strong>696</strong></div>
                 </div>
                 <div class="form-group">
@@ -271,6 +272,8 @@
             <option value="Introduction|pending">Introduction - Pending</option>
             <option value="Salvation|completed">Salvation - Completed</option>
             <option value="Salvation|pending">Salvation - Pending</option>
+            <option value="Forgiveness|completed">Forgiveness - Completed</option>
+            <option value="Forgiveness|pending">Forgiveness - Pending</option>
             <option value="Temptation|completed">Temptation - Completed</option>
             <option value="Temptation|pending">Temptation - Pending</option>
             <option value="Prayers|completed">Prayers - Completed</option>
@@ -320,7 +323,7 @@
         </div>
         <div class="pagination" id="pagination"></div>
       </section>
-            <section id="users" class="view">
+      <section id="users" class="view">
         <div class="card">
           <h3>Manage Users</h3>
           <div class="form-section" style="margin-bottom:24px;">
@@ -387,17 +390,14 @@
     <div class="modal-content">
       <span class="close-modal" onclick="document.getElementById('bulk-message-modal').classList.remove('active')">&times;</span>
       <h3 style="margin-bottom:16px;color:#4a5568;">Send Bulk Message</h3>
-      
       <div style="margin-bottom:16px;">
         <label style="display:block;margin-bottom:8px;font-weight:600;color:#4a5568;font-size:14px;">Search Students</label>
-        <input type="text" id="bulk-message-search" placeholder="Type student name or phone..." 
-          style="width:100%;padding:10px 14px;border:2px solid #e2e8f0;border-radius:8px;font-size:15px;" 
+        <input type="text" id="bulk-message-search" placeholder="Type student name or phone..."
+          style="width:100%;padding:10px 14px;border:2px solid #e2e8f0;border-radius:8px;font-size:15px;"
           oninput="filterBulkMessageStudents()">
       </div>
-      
       <p style="margin-bottom:12px;font-size:14px;color:#64748b;">Select students to message:</p>
       <div id="bulk-student-list" style="max-height:200px;overflow-y:auto;margin-bottom:16px;border:1px solid #e2e8f0;border-radius:8px;padding:8px;"></div>
-      
       <div class="form-row" style="margin-bottom:12px;">
         <div class="form-group">
           <label>Message Method</label>
@@ -416,16 +416,15 @@
           </select>
         </div>
       </div>
-      
       <div class="form-group">
         <label>Message</label>
         <textarea id="bulk-message-text" placeholder="Type your message..." style="width:100%;padding:12px;border:2px solid #e2e8f0;border-radius:12px;margin-bottom:16px;min-height:100px;"></textarea>
       </div>
-      
       <button class="btn-success" onclick="sendBulkMessage()" style="width:100%;"><i class="fas fa-paper-plane"></i> Send Message</button>
     </div>
   </div>
-    <script>
+
+  <script>
     console.log('Script starting to load...');
 
     const firebaseConfig = {
@@ -449,7 +448,8 @@
     const auth = firebase.auth();
 
     const app = {
-      lessons: ["Introduction","Salvation","Temptation","Prayers","Bible","Fellowship","Witnessing","Baptism","HolySpirit1","HolySpirit2","Giving","Deliverance1","Deliverance2","Evangelism","Kesha"],
+      // CHANGE 1: Added "Forgiveness" after "Salvation"
+      lessons: ["Introduction","Salvation","Forgiveness","Temptation","Prayers","Bible","Fellowship","Witnessing","Baptism","HolySpirit1","HolySpirit2","Giving","Deliverance1","Deliverance2","Evangelism","Kesha"],
       students: {},
       progress: {},
       lessonStates: {},
@@ -539,6 +539,7 @@
       const hintEl = document.getElementById('class-hint');
       if (hintEl) hintEl.innerHTML = 'Next available: <strong>' + app.nextClassNumber + '</strong>';
       const classInput = document.getElementById('de-class');
+      // Only auto-fill if empty (don't override user edits)
       if (classInput && !classInput.value) classInput.value = app.nextClassNumber;
       const cohortInput = document.getElementById('de-cohort');
       if (cohortInput && !cohortInput.value) cohortInput.value = new Date().getFullYear();
@@ -584,7 +585,8 @@
         .then(() => { alert('Request submitted!'); closeRegisterModal(); auth.signOut(); })
         .catch(err => alert('Error: ' + err.message));
     };
-        function loadUserManagement() {
+
+    function loadUserManagement() {
       const pendingList = document.getElementById('pending-users-list');
       const authorizedList = document.getElementById('authorized-users-list');
       database.ref('pending_users').on('value', snapshot => {
@@ -623,7 +625,8 @@
         .then(uc => database.ref('authorized_users/' + uc.user.uid).set({ email, name, role: 'User', createdAt: firebase.database.ServerValue.TIMESTAMP, status: 'approved' }))
         .then(() => { alert('User created!'); e.target.reset(); }).catch(err => alert('Error: ' + err.message));
     };
-        function populateLessonsGrid() {
+
+    function populateLessonsGrid() {
       const grid = document.getElementById('lessons-grid');
       if (!grid) return;
       grid.innerHTML = app.lessons.map((l, i) => '<div class="lesson-item" data-lesson="' + l + '"><label>' + l + '</label><span class="toggle-switch" data-lesson="' + l + '" onclick="toggleLesson(this)"></span></div>').join('');
@@ -644,6 +647,8 @@
       const email = document.getElementById('de-email').value.trim();
       const joined = document.getElementById('de-joined').value || new Date().toISOString();
       if (!name || !phone || !classNum) { alert('Fill Name, Phone, Class'); return; }
+      // Validate class number is numeric
+      if (isNaN(parseInt(classNum))) { alert('Class Number must be a valid number'); return; }
       const student = { name, phone, class: classNum, cohort, email, group: classNum, joined, updatedAt: Date.now(), status: 'active' };
       database.ref('students/' + studentId).set(student).then(() => {
         const progressData = {};
@@ -670,8 +675,8 @@
       const student = app.students[studentId];
       if (completed === app.lessons.length && !student.graduationDate) {
         const graduationDate = new Date().toISOString().split('T')[0];
-        database.ref('students/' + studentId).update({ 
-          graduationDate: graduationDate, 
+        database.ref('students/' + studentId).update({
+          graduationDate: graduationDate,
           status: 'graduated',
           updatedAt: Date.now()
         }).then(() => {
@@ -733,7 +738,7 @@
         container.classList.remove('show');
         badge.style.display = 'none';
         contactDiv.innerHTML = '';
-        document.getElementById('lessons-completed').textContent = '0/15';
+        document.getElementById('lessons-completed').textContent = '0/16';
         return;
       }
       container.classList.add('show');
@@ -760,7 +765,7 @@
         lessonLabels.push(l);
         lessonData.push(done ? 100 : 0);
       });
-      document.getElementById('lessons-completed').textContent = completedCount + '/15';
+      document.getElementById('lessons-completed').textContent = completedCount + '/' + app.lessons.length;
       if (app.charts.individualProgress) app.charts.individualProgress.destroy();
       if (app.charts.individualOverview) app.charts.individualOverview.destroy();
       app.charts.individualProgress = new Chart(document.getElementById('individual-progress-chart'), {
@@ -789,7 +794,7 @@
       });
       const avg = count > 0 ? Math.round(total / count) : 0;
       document.getElementById('avg-attendance').textContent = avg + '%';
-      document.getElementById('lessons-completed').textContent = '0/15';
+      document.getElementById('lessons-completed').textContent = '0/' + app.lessons.length;
       document.getElementById('active-groups').textContent = [...new Set(Object.values(app.students).map(s => s.class))].length;
       document.getElementById('graduated-count').textContent = graduatedCount;
       updateCharts();
@@ -814,16 +819,12 @@
         data: { labels: ['High (>50%)', 'Low (<50%)'], datasets: [{ data: [high, app.lessons.length - high], backgroundColor: ['rgba(67,233,123,0.8)', 'rgba(250,112,154,0.8)'] }] },
         options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
       });
-    };
-    
-        window.loadStudentForEdit = function(id) {
+    }
+
+    window.loadStudentForEdit = function(id) {
       console.log('Loading student:', id);
       const s = app.students[id];
-      if (!s) {
-        console.error('Student not found!', id);
-        alert('Student not found!');
-        return;
-      }
+      if (!s) { console.error('Student not found!', id); alert('Student not found!'); return; }
       const p = app.progress[id] || {};
       document.getElementById('student-id').value = id;
       document.getElementById('de-name').value = s.name || '';
@@ -835,10 +836,10 @@
       if (s.phone) addContactButtonsToForm(s.phone);
       app.lessons.forEach(l => {
         const toggle = document.querySelector('.toggle-switch[data-lesson="' + l + '"]');
-        if (toggle) { 
-          const isCompleted = isLessonCompleted(p[l]); 
-          toggle.classList.toggle('active', isCompleted); 
-          app.lessonStates[l] = isCompleted; 
+        if (toggle) {
+          const isCompleted = isLessonCompleted(p[l]);
+          toggle.classList.toggle('active', isCompleted);
+          app.lessonStates[l] = isCompleted;
         }
       });
       const existingDeleteBtn = document.getElementById('edit-delete-btn');
@@ -849,17 +850,15 @@
         deleteBtn.className = 'btn-danger';
         deleteBtn.innerHTML = 'Delete Student';
         deleteBtn.style.cssText = 'margin-left:12px;margin-top:12px;';
-        deleteBtn.onclick = function(e) { 
+        deleteBtn.onclick = function(e) {
           e.preventDefault();
           e.stopPropagation();
-          deleteStudent(id); 
+          deleteStudent(id);
         };
         const form = document.querySelector('#data-entry-form');
         if (form) {
           const submitBtn = form.querySelector('button[type="submit"]');
-          if (submitBtn) {
-            submitBtn.parentNode.insertBefore(deleteBtn, submitBtn.nextSibling);
-          }
+          if (submitBtn) submitBtn.parentNode.insertBefore(deleteBtn, submitBtn.nextSibling);
         }
       }
       showView('data-entry');
@@ -870,12 +869,10 @@
       if (!confirm('Are you sure you want to delete this student?')) return;
       database.ref('students/' + id).remove().then(() => {
         return database.ref('progress/' + id).remove();
-      }).then(() => { 
-        alert('Student deleted successfully'); 
-        calculateNextClassNumber(); 
-      }).catch(err => {
-        alert('Error deleting student: ' + err.message);
-      });
+      }).then(() => {
+        alert('Student deleted successfully');
+        calculateNextClassNumber();
+      }).catch(err => { alert('Error deleting student: ' + err.message); });
     };
 
     function updateClassFilter() {
@@ -884,14 +881,12 @@
       const classes = [...new Set(Object.values(app.students).map(s => s.class).filter(c => c))].sort((a, b) => parseInt(a) - parseInt(b));
       f.innerHTML = '<option value="">All Classes</option>' + classes.map(c => '<option value="' + c + '">Class ' + c + '</option>').join('');
     }
-        window.renderReportsTable = function() {
+
+    window.renderReportsTable = function() {
       console.log('Rendering reports table...');
       const header = document.getElementById('table-header');
       const body = document.getElementById('table-body');
-      if (!header || !body) {
-        console.error('Table header or body not found!');
-        return;
-      }
+      if (!header || !body) { console.error('Table header or body not found!'); return; }
       const searchTerm = (document.getElementById('search-report').value || '').trim().toLowerCase();
       const classFilter = document.getElementById('filter-class').value || '';
       const lessonFilter = document.getElementById('filter-lesson')?.value || '';
@@ -923,18 +918,18 @@
         }
         return matchesSearch && matchesClassFilter && matchesLessonFilter && matchesStatusFilter;
       });
-      
+
       console.log('Filtered students:', app.filteredStudents.length);
-      
+
       header.innerHTML = '<th style="text-align:left;min-width:180px;max-width:200px;position:sticky;left:0;z-index:11;background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);font-size:12px;">STUDENT</th>' +
         '<th style="min-width:100px;font-size:11px;">JOINED</th>' +
         app.lessons.map(l => '<th style="min-width:70px;font-size:10px;writing-mode:vertical-lr;transform:rotate(180deg);height:90px;">' + l.toUpperCase() + '</th>').join('') +
         '<th style="min-width:90px;font-size:11px;">Progress</th>' +
         '<th style="min-width:70px;font-size:11px;">Actions</th>';
-      
+
       const totalPages = Math.ceil(app.filteredStudents.length / app.recordsPerPage);
       const pageStudents = app.filteredStudents.slice((app.currentPage - 1) * app.recordsPerPage, app.currentPage * app.recordsPerPage);
-      
+
       body.innerHTML = pageStudents.map(id => {
         const s = app.students[id];
         const p = app.progress[id] || {};
@@ -947,7 +942,6 @@
         const riskBadge = isAtRisk && !s.graduationDate ? '<span class="risk-badge">At Risk</span>' : '';
         const gradBadge = s.graduationDate ? '<span class="graduated-badge">Graduated</span>' : '';
         const joinedDate = s.joined ? s.joined.split('T')[0] : '-';
-        
         return '<tr onclick="loadStudentForEdit(\'' + id + '\')" style="cursor:pointer;">' +
           '<td style="text-align:left;"><div class="student-info"><span class="student-name" style="font-size:13px;">' + s.name + ' ' + riskBadge + ' ' + gradBadge + '</span><span class="student-phone" style="font-size:11px;"><i class="fas fa-phone"></i> ' + s.phone + '</span><span class="student-class" style="font-size:11px;"><i class="fas fa-graduation-cap"></i> Class ' + s.class + '</span><div class="contact-buttons">' +
           '<a href="tel:' + s.phone + '" class="btn-contact btn-call" onclick="event.stopPropagation();"><i class="fas fa-phone"></i></a>' +
@@ -956,16 +950,14 @@
           '<td style="text-align:center;font-size:11px;">' + joinedDate + '</td>' +
           app.lessons.map(l => {
             const isCompleted = isLessonCompleted(p[l]);
-            if (isCompleted) {
-              return '<td style="text-align:center;"><span style="display:inline-block;padding:6px 12px;background:linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);color:white;border-radius:20px;font-size:11px;font-weight:700;">YES</span></td>';
-            } else {
-              return '<td style="text-align:center;"><span style="display:inline-block;padding:6px 12px;background:linear-gradient(135deg, #fa709a 0%, #fee140 100%);color:white;border-radius:20px;font-size:11px;font-weight:700;">NO</span></td>';
-            }
+            return isCompleted
+              ? '<td style="text-align:center;"><span style="display:inline-block;padding:6px 12px;background:linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);color:white;border-radius:20px;font-size:11px;font-weight:700;">YES</span></td>'
+              : '<td style="text-align:center;"><span style="display:inline-block;padding:6px 12px;background:linear-gradient(135deg, #fa709a 0%, #fee140 100%);color:white;border-radius:20px;font-size:11px;font-weight:700;">NO</span></td>';
           }).join('') +
-          '<td style="text-align:center;"><small style="font-weight:700;color:#667eea;font-size:11px;">' + percent + '%</small><br><small style="color:#64748b;font-size:11px;">(' + completedCount + '/15)</small></td>' +
+          '<td style="text-align:center;"><small style="font-weight:700;color:#667eea;font-size:11px;">' + percent + '%</small><br><small style="color:#64748b;font-size:11px;">(' + completedCount + '/' + app.lessons.length + ')</small></td>' +
           '<td style="text-align:center;font-size:11px;">Edit</td></tr>';
       }).join('');
-      
+
       if (app.filteredStudents.length === 0) body.innerHTML = '<tr><td colspan="' + (app.lessons.length + 4) + '" style="padding:40px;text-align:center;color:#718096;">No students found</td></tr>';
       renderPagination(totalPages);
     };
@@ -980,15 +972,13 @@
         '<button onclick="changePage(' + totalPages + ')" ' + (app.currentPage===totalPages?'disabled':'') + '><i class="fas fa-angle-double-right"></i></button>';
     }
     window.changePage = function(page) { app.currentPage = page; renderReportsTable(); window.scrollTo({ top: 0, behavior: 'smooth' }); };
-        window.exportToCSV = function() {
+
+    window.exportToCSV = function() {
       let csv = 'Class,Cohort,Name,Phone,Email,Joined,' + app.lessons.join(',') + ',Progress\n';
       Object.keys(app.students).forEach(id => {
         const s = app.students[id], p = app.progress[id] || {};
         let row = '"' + s.class + '","' + (s.cohort||'') + '","' + s.name + '","' + s.phone + '","' + (s.email||'') + '","' + (s.joined||'').split('T')[0] + '"';
-        app.lessons.forEach(l => { 
-          const isCompleted = isLessonCompleted(p[l]);
-          row += ',"' + (isCompleted ? 'YES' : 'NO') + '"';
-        });
+        app.lessons.forEach(l => { row += ',"' + (isLessonCompleted(p[l]) ? 'YES' : 'NO') + '"'; });
         const completed = app.lessons.filter(l => isLessonCompleted(p[l])).length;
         csv += row + ',"' + Math.round((completed/app.lessons.length)*100) + '%"\n';
       });
@@ -1003,27 +993,21 @@
     window.exportToPDF = function() {
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF('l', 'mm', 'a4');
-      
       doc.setFillColor(102, 126, 234);
       doc.rect(0, 0, doc.internal.pageSize.getWidth(), 25, 'F');
-      
       doc.setFontSize(18);
       doc.setTextColor(255, 255, 255);
       doc.setFont('helvetica', 'bold');
       doc.text('Student Discipleship Progress Report', doc.internal.pageSize.getWidth() / 2, 12, { align: 'center' });
-      
       doc.setFontSize(10);
       doc.setFont('helvetica', 'normal');
       doc.text('Generated: ' + new Date().toLocaleString(), doc.internal.pageSize.getWidth() / 2, 19, { align: 'center' });
-      
       const totalStudents = Object.keys(app.students).length;
       const graduatedCount = Object.values(app.students).filter(s => s.graduationDate).length;
       doc.setFont('helvetica', 'bold');
       doc.text('Total Students: ' + totalStudents, 14, 32);
       doc.text('Graduated: ' + graduatedCount, 70, 32);
-      
       const headers = [['Class', 'Name', 'Phone', 'Joined'].concat(app.lessons).concat(['Progress'])];
-      
       const data = Object.keys(app.students).sort((a, b) => {
         const classA = parseInt(app.students[a].class) || 0;
         const classB = parseInt(app.students[b].class) || 0;
@@ -1035,69 +1019,32 @@
         const lessonStatus = app.lessons.map(l => isLessonCompleted(p[l]) ? 'YES' : 'NO');
         return [s.class, s.name, s.phone, (s.joined||'').split('T')[0]].concat(lessonStatus).concat([percent + '%']);
       });
-      
       doc.autoTable({
         head: headers,
         body: data,
         startY: 38,
         theme: 'grid',
-        styles: { 
-          fontSize: 6.5, 
-          cellPadding: 1.5, 
-          font: 'helvetica',
-          cellWidth: 'auto',
-          overflow: 'linebreak',
-          halign: 'center'
-        },
-        headStyles: { 
-          fillColor: [67, 233, 123], 
-          textColor: [255, 255, 255], 
-          fontStyle: 'bold', 
-          fontSize: 7,
-          halign: 'center',
-          lineWidth: 0.5,
-          lineColor: [102, 126, 234]
-        },
-        alternateRowStyles: { 
-          fillColor: [248, 250, 252] 
-        },
-        columnStyles: { 
-          0: { cellWidth: 12, fontStyle: 'bold', fillColor: [230, 236, 255] },
-          1: { cellWidth: 28, halign: 'left', fontStyle: 'bold' },
-          2: { cellWidth: 22 },
-          3: { cellWidth: 18 },
-          19: { cellWidth: 16, fontStyle: 'bold' }
-        },
+        styles: { fontSize: 6.5, cellPadding: 1.5, font: 'helvetica', cellWidth: 'auto', overflow: 'linebreak', halign: 'center' },
+        headStyles: { fillColor: [67, 233, 123], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 7, halign: 'center', lineWidth: 0.5, lineColor: [102, 126, 234] },
+        alternateRowStyles: { fillColor: [248, 250, 252] },
+        columnStyles: { 0: { cellWidth: 12, fontStyle: 'bold', fillColor: [230, 236, 255] }, 1: { cellWidth: 28, halign: 'left', fontStyle: 'bold' }, 2: { cellWidth: 22 }, 3: { cellWidth: 18 } },
         didParseCell: function(data) {
-          if (data.column.index >= 4 && data.column.index <= 18) {
-            if (data.cell.raw === 'YES') {
-              data.cell.styles.fillColor = [212, 251, 225];
-              data.cell.styles.textColor = [6, 95, 70];
-              data.cell.styles.fontStyle = 'bold';
-            } else if (data.cell.raw === 'NO') {
-              data.cell.styles.fillColor = [254, 226, 226];
-              data.cell.styles.textColor = [159, 18, 57];
-            }
+          const lastCol = app.lessons.length + 4;
+          if (data.column.index >= 4 && data.column.index < lastCol) {
+            if (data.cell.raw === 'YES') { data.cell.styles.fillColor = [212, 251, 225]; data.cell.styles.textColor = [6, 95, 70]; data.cell.styles.fontStyle = 'bold'; }
+            else if (data.cell.raw === 'NO') { data.cell.styles.fillColor = [254, 226, 226]; data.cell.styles.textColor = [159, 18, 57]; }
           }
-          if (data.column.index === 19) {
+          if (data.column.index === lastCol) {
             const percent = parseInt(data.cell.raw);
-            if (percent === 100) {
-              data.cell.styles.fillColor = [67, 233, 123];
-              data.cell.styles.textColor = [255, 255, 255];
-            } else if (percent >= 50) {
-              data.cell.styles.fillColor = [255, 209, 102];
-              data.cell.styles.textColor = [31, 41, 55];
-            } else {
-              data.cell.styles.fillColor = [250, 112, 154];
-              data.cell.styles.textColor = [255, 255, 255];
-            }
+            if (percent === 100) { data.cell.styles.fillColor = [67, 233, 123]; data.cell.styles.textColor = [255, 255, 255]; }
+            else if (percent >= 50) { data.cell.styles.fillColor = [255, 209, 102]; data.cell.styles.textColor = [31, 41, 55]; }
+            else { data.cell.styles.fillColor = [250, 112, 154]; data.cell.styles.textColor = [255, 255, 255]; }
           }
         },
         margin: { top: 38, left: 8, right: 8, bottom: 8 },
         pageBreak: 'auto',
         showHead: 'everyPage'
       });
-      
       const pageCount = doc.internal.getNumberOfPages();
       for (let i = 1; i <= pageCount; i++) {
         doc.setPage(i);
@@ -1111,7 +1058,6 @@
         doc.setTextColor(255, 255, 255);
         doc.text('Page ' + i + ' of ' + pageCount, doc.internal.pageSize.getWidth() - 15, doc.internal.pageSize.getHeight() - 5);
       }
-      
       doc.save('Discipleship_Progress_Report_' + new Date().toISOString().split('T')[0] + '.pdf');
       alert('PDF exported successfully!');
     };
@@ -1125,23 +1071,15 @@
     window.filterBulkMessageStudents = function() {
       const searchTerm = (document.getElementById('bulk-message-search').value || '').trim().toLowerCase();
       const list = document.getElementById('bulk-student-list');
-      
       let studentsToShow = window.originalBulkStudents || app.filteredStudents;
-      
       if (searchTerm) {
         studentsToShow = studentsToShow.filter(id => {
           const s = app.students[id];
-          return (s.name && s.name.toLowerCase().includes(searchTerm)) ||
-                 (s.phone && s.phone.toString().includes(searchTerm));
+          return (s.name && s.name.toLowerCase().includes(searchTerm)) || (s.phone && s.phone.toString().includes(searchTerm));
         });
       }
-      
-      if (studentsToShow.length === 0) {
-        list.innerHTML = '<p style="padding:20px;text-align:center;color:#64748b;">No students found</p>';
-        return;
-      }
-      
-      list.innerHTML = '<label style="display:block;padding:8px 0;margin-bottom:8px;"><input type="checkbox" id="bulk-select-all" onchange="toggleBulkSelectAll()"/> <strong>Select All (' + studentsToShow.length + ')</strong></label>' + 
+      if (studentsToShow.length === 0) { list.innerHTML = '<p style="padding:20px;text-align:center;color:#64748b;">No students found</p>'; return; }
+      list.innerHTML = '<label style="display:block;padding:8px 0;margin-bottom:8px;"><input type="checkbox" id="bulk-select-all" onchange="toggleBulkSelectAll()"/> <strong>Select All (' + studentsToShow.length + ')</strong></label>' +
         studentsToShow.map(id => {
           const s = app.students[id];
           return '<label style="display:block;padding:8px 0;"><input type="checkbox" value="' + id + '" class="bulk-select"/> ' + s.name + ' (Class ' + s.class + ')</label>';
@@ -1156,15 +1094,10 @@
     window.useTemplateMessage = function() {
       const template = document.getElementById('message-template').value;
       const textarea = document.getElementById('bulk-message-text');
-      if (template === 'reminder') {
-        textarea.value = 'Hello! This is a reminder that you have pending lessons in the Discipleship Program. Please catch up soon to graduate! God bless you.';
-      } else if (template === 'encouragement') {
-        textarea.value = 'Greetings! We appreciate your commitment to the Discipleship Program. Keep pressing forward - you are doing great! Stay blessed.';
-      } else if (template === 'graduation') {
-        textarea.value = 'Congratulations! You have completed all lessons and are eligible for graduation. Please contact us for your certificate. Well done!';
-      } else {
-        textarea.value = '';
-      }
+      if (template === 'reminder') textarea.value = 'Hello! This is a reminder that you have pending lessons in the Discipleship Program. Please catch up soon to graduate! God bless you.';
+      else if (template === 'encouragement') textarea.value = 'Greetings! We appreciate your commitment to the Discipleship Program. Keep pressing forward - you are doing great! Stay blessed.';
+      else if (template === 'graduation') textarea.value = 'Congratulations! You have completed all lessons and are eligible for graduation. Please contact us for your certificate. Well done!';
+      else textarea.value = '';
     };
 
     window.sendBulkMessage = function() {
@@ -1177,26 +1110,21 @@
         const id = checkbox.value;
         const phone = app.students[id].phone.replace(/[\s\-\(\)]/g, '');
         const cleanPhone = phone.startsWith('0') ? '254' + phone.substring(1) : phone.startsWith('+') ? phone.substring(1) : phone;
-        if (method === 'whatsapp') {
-          window.open('https://wa.me/' + cleanPhone + '?text=' + message, '_blank');
-        } else if (method === 'sms') {
-          window.open('sms:' + phone + '?body=' + message, '_blank');
-        }
+        if (method === 'whatsapp') window.open('https://wa.me/' + cleanPhone + '?text=' + message, '_blank');
+        else if (method === 'sms') window.open('sms:' + phone + '?body=' + message, '_blank');
       });
       alert('Opened ' + method.toUpperCase() + ' for ' + selected.length + ' student(s). Please send messages manually.');
       document.getElementById('bulk-message-modal').classList.remove('active');
     };
-        window.fixGraduationStatus = function() {
+
+    window.fixGraduationStatus = function() {
       let fixedCount = 0;
       Object.keys(app.students).forEach(id => {
         const s = app.students[id];
         const p = app.progress[id] || {};
         const completed = app.lessons.filter(l => isLessonCompleted(p[l])).length;
         if (completed === app.lessons.length && !s.graduationDate) {
-          database.ref('students/' + id).update({
-            graduationDate: new Date().toISOString().split('T')[0],
-            status: 'graduated'
-          });
+          database.ref('students/' + id).update({ graduationDate: new Date().toISOString().split('T')[0], status: 'graduated' });
           fixedCount++;
         }
       });
@@ -1208,41 +1136,21 @@
     const installBtn = document.getElementById('install-app-btn');
 
     window.addEventListener('beforeinstallprompt', (e) => {
-      console.log('Install prompt triggered');
       e.preventDefault();
       deferredPrompt = e;
-      if (installBtn) {
-        installBtn.style.display = 'inline-block';
-      }
+      if (installBtn) installBtn.style.display = 'inline-block';
     });
 
     window.installApp = async function() {
-      if (!deferredPrompt) {
-        alert('Install not available right now. Make sure you are on HTTPS and using Chrome/Edge.');
-        return;
-      }
-      
-      console.log('Installing app...');
+      if (!deferredPrompt) { alert('Install not available right now. Make sure you are on HTTPS and using Chrome/Edge.'); return; }
       deferredPrompt.prompt();
       const { outcome } = await deferredPrompt.userChoice;
-      console.log('User choice:', outcome);
-      
-      if (outcome === 'accepted') {
-        console.log('User accepted install');
-        if (installBtn) {
-          installBtn.style.display = 'none';
-        }
-        alert('App installed successfully!');
-      }
-      
+      if (outcome === 'accepted') { if (installBtn) installBtn.style.display = 'none'; alert('App installed successfully!'); }
       deferredPrompt = null;
     };
 
     window.addEventListener('appinstalled', () => {
-      console.log('App installed successfully!');
-      if (installBtn) {
-        installBtn.style.display = 'none';
-      }
+      if (installBtn) installBtn.style.display = 'none';
       deferredPrompt = null;
     });
 
@@ -1250,60 +1158,40 @@
       window.addEventListener('load', function() {
         navigator.serviceWorker.register('./sw.js')
           .then(registration => {
-            console.log('Service Worker registered:', registration.scope);
-            
             registration.addEventListener('updatefound', () => {
               const newWorker = registration.installing;
               newWorker.addEventListener('statechange', () => {
                 if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                  console.log('New content available, refresh to update');
-                  if (confirm('New version available! Refresh to update?')) {
-                    window.location.reload();
-                  }
+                  if (confirm('New version available! Refresh to update?')) window.location.reload();
                 }
               });
             });
           })
-          .catch(error => {
-            console.log('Service Worker registration failed:', error);
-          });
+          .catch(error => console.log('Service Worker registration failed:', error));
       });
     }
 
     function hideSplashScreen() {
-      console.log('Hiding splash screen...');
       const splash = document.getElementById('splash-screen');
       if (splash) {
         splash.classList.add('hidden');
-        setTimeout(() => { 
-          splash.style.display = 'none'; 
-          console.log('Splash screen hidden');
-        }, 500);
+        setTimeout(() => { splash.style.display = 'none'; }, 500);
       }
     }
 
     window.addEventListener('DOMContentLoaded', function() {
-      console.log('DOMContentLoaded fired');
       try {
         populateLessonsGrid();
         const deJoined = document.getElementById('de-joined');
         if (deJoined) deJoined.value = new Date().toISOString().split('T')[0];
-        console.log('App initialized');
       } catch (error) {
         console.error('Init error:', error);
       }
       setTimeout(hideSplashScreen, 3000);
     });
 
-    window.addEventListener('load', function() {
-      console.log('Window load fired');
-      setTimeout(hideSplashScreen, 1000);
-    });
-
-    setTimeout(function() {
-      console.log('5 second timeout - forcing splash hide');
-      hideSplashScreen();
-    }, 5000);
+    window.addEventListener('load', function() { setTimeout(hideSplashScreen, 1000); });
+    setTimeout(function() { hideSplashScreen(); }, 5000);
 
     console.log('All scripts loaded successfully');
   </script>
